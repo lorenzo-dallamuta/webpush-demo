@@ -1,6 +1,5 @@
 import createError, { HttpError } from 'http-errors';
 import express, { NextFunction, Request, Response } from 'express'
-import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan'
 
@@ -9,15 +8,10 @@ import usersRouter from './routes/users'
 
 var app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, '../', 'views'));
-app.set('view engine', 'pug');
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -28,14 +22,19 @@ app.use(function (_req: Request, _res: Response, next: NextFunction) {
 });
 
 // error handler
-app.use(function (err: HttpError, req: Request, res: Response, next: NextFunction): void {
+app.use(function (err: HttpError, req: Request, res: Response, _next: NextFunction): void {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
+  // send the error response
   res.status(err.status || 500);
-  res.render('error');
+  res.json({
+    msg: err.message,
+    status: err.status,
+    stack: err.stack,
+    name: err.name
+  })
 });
 
 export default app;
