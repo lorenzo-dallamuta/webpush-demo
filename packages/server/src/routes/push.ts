@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express'
-import { PushSubscription } from "web-push"
+import webpush, { PushSubscription, SendResult, WebPushError } from "web-push"
 import Database from 'better-sqlite3';
 
 var router = express.Router();
@@ -101,6 +101,41 @@ router.post('/', function (req: Request, res: Response) {
           },
         });
       }
+    });
+});
+
+router.post("/notifications", function (req: Request, res: Response) {
+  getAllSubscriptionsFromDatabase()
+    .then(function (entries) {
+      let promiseChain: Promise<void | SendResult> = Promise.resolve();
+      entries.forEach((entry) => {
+        promiseChain = promiseChain.then(() => {
+          return webpush
+            .sendNotification(
+              JSON.parse(entry.subscription),
+              req.body["message"]?.toString() ?? "no message"
+            )
+            .catch((err: WebPushError) => {
+              if (err.statusCode === 404 || err.statusCode === 410) {
+                console.error('Subscription has expired or is no longer valid: ', err);
+                return deleteSubscriptionFromDatabase(entry.id);
+              } else {
+                throw err;
+              }
+            });
+        });
+      })
+      return promiseChain;
+    })
+    .then(() => {
+      res.status(200).end();
+    })
+    .catch(function (err) {
+      res.status(500);
+      res.setHeader('Content-Type', 'application/json');
+      res.json({
+        error: err.message ?? err,
+      });
     });
 });
 
