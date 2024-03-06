@@ -9,3 +9,13 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/`
   </main>
 `;
 
+(function () {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .catch(function (err) {
+        console.error('Unable to register service worker.', err);
+      });
+  }
+})()
+
