@@ -16,10 +16,19 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/`
       .register('/service-worker.js')
       .then(function () {
         if ('PushManager' in window) {
-          const main = document.querySelector<HTMLButtonElement>('#main')!
-          createDialog(main)
-            .then((dialog) => attachInvite(dialog))
-            .catch((err) => console.error(err))
+          navigator.serviceWorker.getRegistration()
+            .then(function (registration) {
+              return registration?.pushManager.getSubscription()
+            })
+            .then(function (subscription) {
+              if (!subscription) {
+                const main = document.querySelector<HTMLButtonElement>('#main')!
+                createDialog(main)
+                  .then((dialog) => attachInvite(dialog))
+                  .catch((err) => console.error(err))
+              }
+            })
+            .catch((err) => { console.error("Unable to access subscription", err); })
         }
       })
       .catch(function (err) {

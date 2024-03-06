@@ -1,3 +1,5 @@
+import { subscribeUserToPush } from "./push";
+
 export function createDialog(element: HTMLButtonElement) {
   return new Promise<HTMLDialogElement>((resolve, reject) => {
     try {
@@ -22,7 +24,17 @@ export function createDialog(element: HTMLButtonElement) {
 
 export function attachInvite(dialog: HTMLDialogElement) {
   dialog.addEventListener("click", () => {
-    console.log("request subscription")
+    subscribeUserToPush()
+      .then((subscription) => {
+        fetch("http://localhost:3000/push", {
+          body: JSON.stringify(subscription),
+          headers: {
+            "Content-Type": "application/json"
+          },
+          method: "POST",
+        })
+      })
+      .catch((err) => console.log(err))
   })
   dialog.open = true;
 }
