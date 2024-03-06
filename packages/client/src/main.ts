@@ -1,5 +1,4 @@
 import './style.css'
-import { setupCounter } from './counter.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/`
   <header>
@@ -8,6 +7,5 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/`
   <main>
     <h1>Web Push Demo</h1>
   </main>
-`
+`;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)

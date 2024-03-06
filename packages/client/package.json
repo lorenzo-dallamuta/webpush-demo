@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "start": "vite preview",
+    "preview": "pnpm build && pnpm start"
   },
   "devDependencies": {
     "vite": "^5.1.4"
