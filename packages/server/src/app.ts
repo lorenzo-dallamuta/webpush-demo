@@ -48,12 +48,32 @@ app.use(function (err: HttpError, req: Request, res: Response, _next: NextFuncti
 const db = new betterSqlLite("push.sqlite");
 db.pragma('journal_mode = WAL');
 db.exec(/* sql */`CREATE TABLE IF NOT EXISTS subscriptions (subscription TEXT UNIQUE)`);
-db.close();
-
+db.exec(/* sql */`CREATE TABLE IF NOT EXISTS vapid (
+  vapid_subject TEXT NOT NULL,
+  vapid_public TEXT NOT NULL,
+  vapid_private TEXT NOT NULL
+)`);
+const { "COUNT(rowId)": vapidCount } = db
+  .prepare(/* sql */`SELECT COUNT(rowId) FROM vapid`)
+  .get() as { "COUNT(rowId)": number };
+if (vapidCount < 1) {
+  const vapidKeys = webpush.generateVAPIDKeys();
+  db
+    .prepare(/* sql */`INSERT INTO vapid(vapid_subject, vapid_public, vapid_private) VALUES(?, ?, ?)`)
+    .run(process.env.VAPID_SUBJECT!, vapidKeys.publicKey, vapidKeys.privateKey);
+}
+const vapid = db
+  .prepare(/* sql */`SELECT vapid_subject, vapid_public, vapid_private FROM vapid`)
+  .get() as {
+    vapid_subject: string,
+    vapid_public: string,
+    vapid_private: string
+  };
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,     // mail
-  process.env.VAPID_PUBLIC_KEY!,  // public
-  process.env.VAPID_PRIVATE_KEY!, // private
+  vapid.vapid_subject, // mail
+  vapid.vapid_public,  // public
+  vapid.vapid_private, // private
 );
+db.close();
 
 export default app;

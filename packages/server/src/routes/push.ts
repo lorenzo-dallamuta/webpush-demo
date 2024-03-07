@@ -36,6 +36,22 @@ function getAllSubscriptionsFromDatabase() {
   })
 }
 
+function getVapidPublicKey() {
+  return new Promise<string>(function (resolve, reject) {
+    try {
+      const db = new Database("push.sqlite");
+      db.pragma('journal_mode = WAL');
+      const entries = db
+        .prepare(/* sql */`SELECT vapid_public FROM vapid`)
+        .get() as { vapid_public: string }
+      db.close()
+      resolve(entries.vapid_public);
+    } catch (err) {
+      reject(err);
+    }
+  })
+}
+
 function saveSubscriptionToDatabase(subscription: PushSubscription) {
   return new Promise<PushSubscription>(function (resolve, reject) {
     try {
@@ -104,6 +120,28 @@ router.post('/', function (req: Request, res: Response) {
     });
 });
 
+/* GET vapid public key. */
+router.get('/key', function (_req: Request, res: Response) {
+  getVapidPublicKey()
+    .then(function (key) {
+      res.status(200);
+      res.setHeader('Content-Type', 'application/json');
+      res.json({ public: key });
+    })
+    .catch(function (err) {
+      res.status(500);
+      res.setHeader('Content-Type', 'application/json');
+      res.json({
+        error: {
+          id: 'unable-to-get-subscriptions',
+          message: 'We were unable to recover the subscriptions from our database.',
+        },
+      });
+    });
+});
+
+
+/* POST message to push notification broker. */
 router.post("/notifications", function (req: Request, res: Response) {
   getAllSubscriptionsFromDatabase()
     .then(function (entries) {
@@ -117,7 +155,7 @@ router.post("/notifications", function (req: Request, res: Response) {
             )
             .catch((err: WebPushError) => {
               if (err.statusCode === 404 || err.statusCode === 410) {
-                console.error('Subscription has expired or is no longer valid: ', err);
+                console.error('Subscription has expired or is no longer valid');
                 return deleteSubscriptionFromDatabase(entry.id);
               } else {
                 throw err;

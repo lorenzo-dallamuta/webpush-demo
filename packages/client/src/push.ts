@@ -14,13 +14,19 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function subscribeUserToPush() {
-  return navigator.serviceWorker.ready
-    .then(function (registration) {
-      const subscribeOptions = {
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_APPLICATION_SERVER_KEY),
-      };
-      return registration?.pushManager.subscribe(subscribeOptions);
+  return fetch("http://localhost:3000/push/key")
+    .then(function (res) {
+      return res.json()
+    })
+    .then(function (data: { public: string }) {
+      return navigator.serviceWorker.ready
+        .then(function (registration) {
+          const subscribeOptions = {
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(data.public),
+          };
+          return registration?.pushManager.subscribe(subscribeOptions);
+        })
     })
     .catch(function (err) { console.error("Unable to subscribe user to push", err); })
 }
